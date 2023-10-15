@@ -6,6 +6,8 @@ import pytz #pip install pytz
 #Run Bash code from Python
 import subprocess
 import sys #Args
+import os
+from pathlib import Path #create a folder
 
 # Global variables
 CurrentMin = None
@@ -14,7 +16,7 @@ port = None
 
 
 # Function to perform the comparison
-def compare_and_set_flag(port):
+def compare_and_set_flag(port, folder_name_str):
     global CurrentMin, Now
 
     while True:
@@ -22,7 +24,7 @@ def compare_and_set_flag(port):
         print("CurrentMin:", CurrentMin, "|" , "Now status:", Now)
         if CurrentMin == "25":
             Now = True
-            ToDo(Now, port)
+            ToDo(Now, port, folder_name_str)
         else:
             Now = False
 
@@ -51,18 +53,27 @@ def get_iran_time():
     return iran_time.strftime('%Y%m%d-%H%M%S')
 
 # Function to perform the task when condition is met
-def ToDo(flag, port):
+def ToDo(flag, port, folder_name_str):
     print("Port: ", port)
     if flag:
         print("Condition met. Performing task now.")
+
+
+
+        #Creating a file
         iran_time = get_iran_time()
         filename = iran_time  # Specify the desired filename
+        #Add .log to filename
+        filename += ".log"
+
+        # Construct the full filepath within the folder
+        filepath = os.path.join(folder_name_str, filename)
 
         # Run the netstat and grep command
-        command = f"netstat -tn | grep :{port} >> {filename}"
+        command = f"netstat -tn | grep :{port} >> {filepath}"
         subprocess.run(command, shell=True)
 
-        print(f"Output appended to {filename}.")
+        print(f"Output appended to {filepath}.")
 
 if __name__ == "__main__":
     print("Welcome to Port detector!\n")
@@ -73,9 +84,37 @@ if __name__ == "__main__":
 
     try:
         port = int(sys.argv[1])
+
+        # Create the folder using os
+        # Specify the folder name
+        folder_name = port
+        # Convert the integer to a string
+        folder_name_str = str(folder_name)
+
+        # Create the folder
+        os.mkdir(folder_name_str)
+
+        # Check if the folder was created
+        if os.path.exists(folder_name_str):
+            print(f"Folder '{folder_name_str}' created successfully.")
+        else:
+            print(f"Failed to create folder '{folder_name_str}'.")
+
+        """
+        # Alternatively, you can use pathlib for a more Pythonic approach:
+        folder_path = Path(folder_name)
+        folder_path.mkdir()
+
+        # Check if the folder was created
+        if folder_path.exists():
+            print(f"Folder '{folder_name}' created successfully.")
+        else:
+            print(f"Failed to create folder '{folder_name}'.")
+
+        """
         # Create and start the threads
         update_thread = threading.Thread(target=update_current_minute)
-        compare_thread = threading.Thread(target=compare_and_set_flag, args=(port,))
+        compare_thread = threading.Thread(target=compare_and_set_flag, args=(port, folder_name_str))
 
         # Start the threads
         update_thread.start()
