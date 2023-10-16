@@ -76,7 +76,7 @@ def ToDo(flag, port, folder_name_str):
         operating_system = platform.system()
 
         if operating_system == "Windows":
-            Check_port_for_windows(filepath)
+            Check_port_for_windows(port, filepath)
         elif operating_system == "Linux":
             distribution = platform.linux_distribution()[0].lower()
             if "debian" in distribution:
@@ -92,16 +92,18 @@ def ToDo(flag, port, folder_name_str):
             print("Unsupported operating system")
 
 
-        """
-        
-        """
+def Check_port_for_windows(port, filepath):
+    netstat_output = subprocess.check_output(["netstat", "-an"], universal_newlines=True)
 
-def Check_port_for_windows(filepath):
-    # Task to perform on Windows
+    # Split the output into lines and filter for the specified port
+    output_lines = [line for line in netstat_output.split('\n') if f':{port}' in line]
+
+    # Join the lines into a single string
+    output_string = '\n'.join(output_lines)
+
     # Save the output to the specified file
     with open(filepath, 'w') as file:
-        file.write("A")
-        # file.write(output)
+        file.write(output_string)
 
     print(f"Output appended to {filepath}.")
 
@@ -114,7 +116,6 @@ def Check_port_for_ubuntu(port, filepath):
                   f"$1\":\"$2}}' "
 
         # Execute the command and capture the output
-        output = subprocess.check_output(command, shell=True, text=True)
         output = subprocess.check_output(command, shell=True, text=True)
 
         # Save the output to the specified file
