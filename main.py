@@ -8,6 +8,7 @@ import subprocess
 import sys #Args
 import os
 from pathlib import Path #create a folder
+import platform #Type of OS
 
 # Global variables
 CurrentMin = None
@@ -22,7 +23,7 @@ def compare_and_set_flag(port, folder_name_str):
     while True:
         # Compare with "01" every minute
         print("CurrentMin:", CurrentMin, "|" , "Now status:", Now)
-        if CurrentMin == "25":
+        if CurrentMin == "33":
             Now = True
             ToDo(Now, port, folder_name_str)
         else:
@@ -54,7 +55,8 @@ def get_iran_time():
 
 # Function to perform the task when condition is met
 def ToDo(flag, port, folder_name_str):
-    print("Port: ", port)
+    #print("Port: ", port)
+    print("\n")
     if flag:
         print("Condition met. Performing task now.")
 
@@ -69,11 +71,83 @@ def ToDo(flag, port, folder_name_str):
         # Construct the full filepath within the folder
         filepath = os.path.join(folder_name_str, filename)
 
+
+        # Get the operating system
+        operating_system = platform.system()
+
+        if operating_system == "Windows":
+            Check_port_for_windows(filepath)
+        elif operating_system == "Linux":
+            distribution = platform.linux_distribution()[0].lower()
+            if "debian" in distribution:
+                Check_port_for_debian(port, filepath)
+            elif "ubuntu" in distribution:
+                Check_port_for_ubuntu(port, filepath)
+            elif "kali" in distribution:
+                #perform_task_for_kali_linux()
+                print("Kalinux is here ...")
+            else:
+                print(f"Unsupported Debian-based distribution: {distribution}")
+        else:
+            print("Unsupported operating system")
+
+
+        """
+        
+        """
+
+def Check_port_for_windows(filepath):
+    # Task to perform on Windows
+    # Save the output to the specified file
+    with open(filepath, 'w') as file:
+        file.write("A")
+        # file.write(output)
+
+    print(f"Output appended to {filepath}.")
+
+def Check_port_for_ubuntu(port, filepath):
+    # Task to perform on Debian (or Debian-based systems)
+    print("Performing task for Debian...")
+    try:
         # Run the netstat and grep command
-        command = f"netstat -tn | grep :{port} >> {filepath}"
-        subprocess.run(command, shell=True)
+        command = f"netstat -tn | grep ':{port}' | grep 'ESTABLISHED' | awk '{{print $5}}' | awk -F ':' '{{print " \
+                  f"$1\":\"$2}}' "
+
+        # Execute the command and capture the output
+        output = subprocess.check_output(command, shell=True, text=True)
+        output = subprocess.check_output(command, shell=True, text=True)
+
+        # Save the output to the specified file
+        with open(filepath, 'w') as file:
+            # file.write("A")
+            file.write(output)
 
         print(f"Output appended to {filepath}.")
+
+    except ValueError:
+        print("Command couldn't run")
+
+
+def Check_port_for_debian(port, filepath):
+    # Task to perform on Debian (or Debian-based systems)
+    print("Performing task for Debian...")
+    try:
+        # Run the netstat and grep command
+        command = f"netstat -tn | grep ':{port}' | grep 'ESTABLISHED' | awk '{{print $5}}' | awk -F ':' '{{print " \
+                  f"$1\":\"$2}}' "
+
+        # Execute the command and capture the output
+        output = subprocess.check_output(command, shell=True, text=True)
+
+        # Save the output to the specified file
+        with open(filepath, 'w') as file:
+            #file.write("A")
+            file.write(output)
+
+        print(f"Output appended to {filepath}.")
+
+    except ValueError:
+        print("Command couldn't run")
 
 if __name__ == "__main__":
     print("Welcome to Port detector!\n")
