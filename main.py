@@ -1,10 +1,8 @@
 import threading
 import time
-#Get time
-import datetime
+import datetime #Get time
 import pytz #pip install pytz
-#Run Bash code from Python
-import subprocess
+import subprocess #Run Bash code from Python
 import sys #Args
 import os
 from pathlib import Path #create a folder
@@ -23,7 +21,7 @@ def compare_and_set_flag(port, folder_name_str):
     while True:
         # Compare with "01" every minute
         print("CurrentMin:", CurrentMin, "|" , "Now status:", Now)
-        if CurrentMin == "33":
+        if CurrentMin == "25":
             Now = True
             ToDo(Now, port, folder_name_str)
         else:
@@ -43,6 +41,16 @@ def update_current_minute():
         # Sleep for 60 seconds
         time.sleep(60)
 
+#Get Pacific's time
+def get_pacific_time():
+    # Set the time zone for Pacific Time
+    pacific_tz = pytz.timezone('America/Los_Angeles')
+
+    # Get the current time in the Pacific Time zone
+    pacific_time = datetime.datetime.now(pacific_tz)
+
+    return pacific_time.strftime('%Y-%m-%d-%H:%M:%S')
+
 #Get Tehran's time
 def get_iran_time():
     # Set the time zone for Iran
@@ -60,8 +68,6 @@ def ToDo(flag, port, folder_name_str):
     if flag:
         print("Condition met. Performing task now.")
 
-
-
         #Creating a file
         iran_time = get_iran_time()
         filename = iran_time  # Specify the desired filename
@@ -70,7 +76,6 @@ def ToDo(flag, port, folder_name_str):
 
         # Construct the full filepath within the folder
         filepath = os.path.join(folder_name_str, filename)
-
 
         # Get the operating system
         operating_system = platform.system()
@@ -93,19 +98,27 @@ def ToDo(flag, port, folder_name_str):
 
 
 def Check_port_for_windows(port, filepath):
+    pacific_time = get_pacific_time()
+
     netstat_output = subprocess.check_output(["netstat", "-an"], universal_newlines=True)
 
     # Split the output into lines and filter for the specified port
     output_lines = [line for line in netstat_output.split('\n') if f':{port}' in line]
 
+    # Check if there are no connections
+    if not output_lines:
+        output_lines.append(f'No connection for port {port} - {pacific_time}')
+    else:
+        output_lines.insert(0, f'List of connections for port {port} - {pacific_time}')
+
     # Join the lines into a single string
     output_string = '\n'.join(output_lines)
 
-    # Save the output to the specified file
+    # Write the output string
     with open(filepath, 'w') as file:
         file.write(output_string)
 
-    print(f"Output appended to {filepath}.")
+    print(f"Output written to {filepath}.")
 
 def Check_port_for_ubuntu(port, filepath):
     # Task to perform on Debian (or Debian-based systems)
