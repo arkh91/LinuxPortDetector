@@ -17,11 +17,12 @@ port = None
 # Function to perform the comparison
 def compare_and_set_flag(port, folder_name_str):
     global CurrentMin, Now
-
+    chosen_time = "37"
+    print(f"Next report at MM: {chosen_time}")
     while True:
         # Compare with "01" every minute
         print("CurrentMin:", CurrentMin, "|" , "Now status:", Now)
-        if CurrentMin == "25":
+        if CurrentMin == chosen_time:
             Now = True
             ToDo(Now, port, folder_name_str)
         else:
@@ -51,6 +52,16 @@ def get_pacific_time():
 
     return pacific_time.strftime('%Y-%m-%d-%H:%M:%S')
 
+def get_linux_distribution():
+    try:
+        with open("/etc/os-release", "r") as f:
+            for line in f:
+                if line.startswith("PRETTY_NAME"):
+                    return line.split("=")[1].strip().strip('"')
+    except FileNotFoundError:
+        return "Unknown distribution"
+
+
 #Get Tehran's time
 def get_iran_time():
     # Set the time zone for Iran
@@ -79,14 +90,18 @@ def ToDo(flag, port, folder_name_str):
 
         # Get the operating system
         operating_system = platform.system()
-
+        print(f"OS is {operating_system}")
         if operating_system == "Windows":
             Check_port_for_windows(port, filepath)
         elif operating_system == "Linux":
-            distribution = platform.linux_distribution()[0].lower()
+            print("Confirmed Linux.")
+            distribution = get_linux_distribution().lower()
+            #distribution = platform.linux_distribution()[0].lower()
+            print(f"Distribution is {distribution}")
             if "debian" in distribution:
                 Check_port_for_debian(port, filepath)
             elif "ubuntu" in distribution:
+                print("Confirmed Ubuntu.")
                 Check_port_for_ubuntu(port, filepath)
             elif "kali" in distribution:
                 #perform_task_for_kali_linux()
@@ -121,8 +136,9 @@ def Check_port_for_windows(port, filepath):
     print(f"Output written to {filepath}.")
 
 def Check_port_for_ubuntu(port, filepath):
+    pacific_time = get_pacific_time()
     # Task to perform on Debian (or Debian-based systems)
-    print("Performing task for Debian...")
+    print("Performing task for Ubuntu...")
     try:
         # Run the netstat and grep command
         command = f"netstat -tn | grep ':{port}' | grep 'ESTABLISHED' | awk '{{print $5}}' | awk -F ':' '{{print " \
@@ -130,12 +146,26 @@ def Check_port_for_ubuntu(port, filepath):
 
         # Execute the command and capture the output
         output = subprocess.check_output(command, shell=True, text=True)
+        # Split the output into lines and filter for the specified port
+        output_lines = [line for line in output.split('\n') if f':{port}' in line]
+        # Check if there are no connections
+        if not output_lines:
+            output_lines.append(f'No connection for port {port} - {pacific_time}')
+        else:
+            output_lines.insert(0, f'List of connections for port {port} - {pacific_time}')
 
+        # Join the lines into a single string
+        output_string = '\n'.join(output_lines)
+
+        # Write the output string
+        with open(filepath, 'w') as file:
+            file.write(output_string)
+        """
         # Save the output to the specified file
         with open(filepath, 'w') as file:
             # file.write("A")
             file.write(output)
-
+        """
         print(f"Output appended to {filepath}.")
 
     except ValueError:
@@ -179,14 +209,20 @@ if __name__ == "__main__":
         # Convert the integer to a string
         folder_name_str = str(folder_name)
 
-        # Create the folder
-        os.mkdir(folder_name_str)
 
+        """
         # Check if the folder was created
         if os.path.exists(folder_name_str):
             print(f"Folder '{folder_name_str}' created successfully.")
         else:
             print(f"Failed to create folder '{folder_name_str}'.")
+        """
+        if not os.path.exists(folder_name_str):
+            # Create the folder
+            os.mkdir(folder_name_str)
+            print(f"Folder '{folder_name_str}' created.")
+        else:
+            print(f"Folder '{folder_name_str}' already exists.")
 
         """
         # Alternatively, you can use pathlib for a more Pythonic approach:
@@ -215,3 +251,5 @@ if __name__ == "__main__":
     except ValueError:
         print("Port number should be an integer.")
         sys.exit(1)
+
+#wget https://github.com/arkh91/PortDetector/archive/master.zip && unzip master.zip
