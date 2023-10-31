@@ -141,8 +141,7 @@ def Check_port_for_ubuntu(port, filepath):
     print("Performing task for Ubuntu...")
     try:
         # Run the netstat and grep command
-        command = f"netstat -tn | grep ':{port}' | grep 'ESTABLISHED' | awk '{{print $5}}' | awk -F ':' '{{print " \
-                  f"$1\":\"$2}}' "
+        command = f"netstat -tn | grep :{port} | grep -v 'tcp6' | awk '/:{port}/ {{print $1, $4, $5, $6}}'"
 
         # Execute the command and capture the output
         output = subprocess.check_output(command, shell=True, text=True)
